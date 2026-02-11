@@ -255,9 +255,16 @@ export function ThumbnailGenerator() {
 
       console.log('Status da resposta:', response.status);
       if (!response.ok) {
-        const error = await response.json();
-        console.error('API Error:', error);
-        throw new Error(error.error || 'Falha na geração');
+        let errorMessage = 'Falha na geração, tente novamente';
+        const responseText = await response.text();
+        try {
+          const error = JSON.parse(responseText);
+          console.error('API Error:', error);
+          errorMessage = error.error || errorMessage;
+        } catch {
+          console.error('API Error (non-JSON):', response.status, responseText);
+        }
+        throw new Error(errorMessage);
       }
 
       // Simulate upload progress (60-100%)

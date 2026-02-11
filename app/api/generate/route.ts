@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { uploadOpenRouterImageToStorage } from '@/lib/supabase-storage';
 
+// Allow longer execution for AI image generation
+export const maxDuration = 60;
+
 export interface GenerateRequest {
   avatarId: string;
   avatarPhotoId?: string;
