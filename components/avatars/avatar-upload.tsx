@@ -15,6 +15,67 @@ export interface UploadedAvatarPhoto {
   mimeType: string;
 }
 
+// Compress image using canvas to reduce file size before upload
+async function compressImage(file: File, maxDimension = 1200, quality = 0.8): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      let { width, height } = img;
+
+      // Only resize if larger than maxDimension
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file); // Fallback to original if canvas not supported
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          // Keep original name but ensure jpeg extension for compressed files
+          const compressedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(compressedFile);
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(file); // Fallback to original on error
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 interface AvatarUploadProps {
   onUploadComplete?: (photos: UploadedAvatarPhoto[]) => void;
   onValidationError?: (error: string) => void;
@@ -92,13 +153,18 @@ export function AvatarUpload({ onUploadComplete, onValidationError, className }:
     setUploading(true);
 
     try {
-      const newPhotos: UploadedAvatarPhoto[] = acceptedFiles.map((file, index) => {
+      // Compress images to reduce upload size
+      const compressedFiles = await Promise.all(
+        acceptedFiles.map((file) => compressImage(file))
+      );
+
+      const newPhotos: UploadedAvatarPhoto[] = compressedFiles.map((file, index) => {
         const photoId = Math.random().toString(36).substring(2, 15);
         return {
           id: photoId,
           file,
           url: createPreviewUrl(file),
-          fileName: file.name,
+          fileName: acceptedFiles[index].name,
           fileSize: file.size,
           mimeType: file.type,
         };
