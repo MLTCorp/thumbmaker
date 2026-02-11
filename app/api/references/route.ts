@@ -3,9 +3,6 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fileStorage } from '@/lib/file-storage';
 
-// Initialize file storage
-fileStorage.init();
-
 export async function POST(req: NextRequest) {
   try {
     // Check authentication
@@ -46,8 +43,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Selecione um tipo' }, { status: 400 });
     }
 
-    // Save file
-    const savedFile = await fileStorage.saveFile(file, session.user.id);
+    // Save file to Supabase Storage
+    const savedFile = await fileStorage.saveReferencePhoto(file, session.user.id);
 
     // FUNCIONAL: Usuário cria nova referência com upload de arquivo + campo de descrição (opcional)
     // FUNCIONAL: Usuário seleciona tipo de referência: thumbnail, logo, ícone ou fundo (dropdown)

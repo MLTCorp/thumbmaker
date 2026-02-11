@@ -14,9 +14,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { UserIcon, PlusIcon, Edit, Trash2 } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { UserIcon, PlusIcon, Edit, Trash2, ArrowLeftIcon, Loader2Icon } from 'lucide-react';
+import { Breadcrumb } from '@/components/layout/breadcrumb';
 import { toast } from 'sonner';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+import Link from 'next/link';
 
 interface Avatar {
   id: string;
@@ -104,6 +110,14 @@ export default function AvatarsPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
+        <div className="mb-4">
+          <Breadcrumb
+            items={[
+              { label: 'Gerar', href: '/generate' },
+              { label: 'Avatars' },
+            ]}
+          />
+        </div>
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Meus Avatars</h1>
@@ -119,26 +133,41 @@ export default function AvatarsPage() {
 
         {/* Content */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 mt-4">Carregando avatars...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <Skeleton className="w-full aspect-square" />
+                  <div className="p-4 space-y-3">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="flex gap-2 mt-4">
+                      <Skeleton className="h-8 w-20" />
+                      <Skeleton className="h-8 w-20" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : avatars.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <UserIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Nenhum avatar criado ainda
-              </h3>
-              <p className="text-gray-600 mb-6">
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <UserIcon className="h-8 w-8" />
+              </EmptyMedia>
+              <EmptyTitle className="text-lg">Nenhum avatar criado ainda</EmptyTitle>
+              <EmptyDescription>
                 Crie seu primeiro avatar carregando 3-10 fotos da sua face
-              </p>
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
               <Button onClick={() => router.push('/avatars/create')}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Criar Meu Primeiro Avatar
               </Button>
-            </CardContent>
-          </Card>
+            </EmptyContent>
+          </Empty>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {avatars.map((avatar) => (
@@ -186,9 +215,16 @@ export default function AvatarsPage() {
                         size="sm"
                         className="rounded-lg px-3 py-1 bg-red-500 hover:bg-red-600 text-white"
                         onClick={() => handleDeleteClick(avatar)}
+                        disabled={avatarToDelete?.id === avatar.id && isDeleting}
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Deletar
+                        {avatarToDelete?.id === avatar.id && isDeleting ? (
+                          <Spinner className="mr-1">
+                            <Loader2Icon className="h-4 w-4" />
+                          </Spinner>
+                        ) : (
+                          <Trash2 className="h-4 w-4 mr-1" />
+                        )}
+                        {avatarToDelete?.id === avatar.id && isDeleting ? 'Deletando...' : 'Deletar'}
                       </Button>
                     </div>
                   </div>

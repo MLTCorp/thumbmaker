@@ -34,7 +34,12 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(thumbnail);
+    // US-010: Add Cache-Control header for 10 minutes (600 seconds)
+    return NextResponse.json(thumbnail, {
+      headers: {
+        'Cache-Control': 'public, max-age=600, s-maxage=600, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Get thumbnail error:', error);
     return NextResponse.json(

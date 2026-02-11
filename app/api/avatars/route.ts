@@ -64,9 +64,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Upload all files simultaneously
+    // Upload all files to Supabase Storage
     const uploadPromises = files.map(async (file) => {
-      return await fileStorage.saveFile(file, session.user.id, 'avatars');
+      return await fileStorage.saveAvatarPhoto(file, session.user.id);
     });
 
     const uploadedPhotos = await Promise.all(uploadPromises);

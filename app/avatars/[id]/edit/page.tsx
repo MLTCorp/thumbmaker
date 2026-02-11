@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeftIcon, ArrowRightIcon, CameraIcon, UserIcon, XIcon } from 'lucide-react';
+import Link from 'next/link';
 import { AvatarUpload, UploadedAvatarPhoto } from '@/components/avatars/avatar-upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -214,6 +215,12 @@ export default function EditAvatarPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
+          <Link href="/avatars">
+            <Button variant="ghost" size="sm" className="mb-4">
+              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Editar Avatar</h1>
           <p className="text-gray-600">
             Edite o nome do avatar e gerencie as fotos

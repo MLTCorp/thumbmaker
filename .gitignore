@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/test-results
 
 # next.js
 /.next/
@@ -23,14 +24,16 @@
 # misc
 .DS_Store
 *.pem
+nul
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+dev-server.log
 
-# env files (can opt-in for committing if needed)
+# env files - kept in repo for dev continuity
 # .env* - REMOVED para permitir commit no GitHub
 
 # vercel
@@ -39,3 +42,36 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dev tools & automation
+.claude/
+.opencode/
+.sincron-auto/
+.sincron-plan/
+.playwright-auth.json
+.playwright-cli/
+.playwright-mcp/
+opencode.json
+settings.local.json
+sincron-auto-state.json
+
+# eval/test scripts
+eval-*.spec.ts
+eval-*.mjs
+inspect-*.mjs
+check-console-errors.mjs
+example-generator.html
+playwright-test.spec.ts
+
+# screenshots (dev artifacts)
+screenshot-*.png
+
+# local uploads (images are in Supabase Storage)
+public/uploads/
+
+# temp analysis docs
+AUTH_IMPLEMENTATION.md
+UX_ANALYSIS.md
+UX_FINAL_REPORT.md
+UX_IMPROVEMENTS_SUMMARY.md
+signup-page.yaml

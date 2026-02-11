@@ -8,7 +8,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Check if Supabase is configured
-const isSupabaseConfigured = supabaseUrl && supabaseUrl.startsWith('http');
+const isSupabaseConfigured = supabaseUrl && (supabaseUrl.startsWith('http') || supabaseUrl.startsWith('https'));
 
 // Only create client if configuration is valid
 export const supabase = isSupabaseConfigured

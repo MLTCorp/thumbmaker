@@ -12,7 +12,10 @@ import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2Icon, DownloadIcon, RefreshCwIcon, ChevronLeftIcon, ChevronRightIcon, UploadIcon } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from '@/components/ui/empty';
+import { Spinner } from '@/components/ui/spinner';
+import { Loader2Icon, DownloadIcon, RefreshCwIcon, ChevronLeftIcon, ChevronRightIcon, UploadIcon, ImageIcon, UserIcon, FolderIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Reference {
@@ -212,36 +215,31 @@ export function ThumbnailGenerator() {
 
   // Handle thumbnail generation
   const handleGenerate = async () => {
-    // Validation
-    if (!selectedAvatar) {
-      toast.error('Selecione um avatar');
-      return;
-    }
+    if (!selectedAvatar || selectedPhotoIndex < 0 || !textIdea.trim()) return;
 
-    if (!textIdea.trim()) {
-      toast.error('Digite uma ideia para o thumbnail');
-      return;
-    }
-
-    if (textIdea.length > 50) {
-      toast.error('A ideia de texto deve ter no máximo 50 caracteres');
-      return;
-    }
+    const selectedPhoto = selectedAvatar.photos[selectedPhotoIndex];
 
     setGenerating(true);
-    setUploading(false);
-    setUploadProgress(0);
-    setGeneratedThumbnailUrl(null);
     setLastError(null);
+    setUploadProgress(0);
+
+    console.log('=== Iniciando geração ===');
+    console.log('Avatar ID:', selectedAvatar?.id);
+    console.log('Avatar:', selectedAvatar);
+    console.log('Photo:', selectedPhoto);
+    console.log('References:', selectedReferenceIds);
+    console.log('Text Idea:', textIdea);
 
     try {
-      const selectedPhoto = selectedAvatar.photos[selectedPhotoIndex];
-
-      // Simulate generation progress (20-40%)
+      // Simulate upload progress (0-60%)
+      setUploadProgress(10);
+      await new Promise(resolve => setTimeout(resolve, 200));
       setUploadProgress(20);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200));
       setUploadProgress(40);
+      await new Promise(resolve => setTimeout(resolve, 200));
 
+      console.log('Enviando requisição para API...');
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -255,8 +253,10 @@ export function ThumbnailGenerator() {
         }),
       });
 
+      console.log('Status da resposta:', response.status);
       if (!response.ok) {
         const error = await response.json();
+        console.error('API Error:', error);
         throw new Error(error.error || 'Falha na geração');
       }
 
@@ -269,6 +269,11 @@ export function ThumbnailGenerator() {
       setUploadProgress(100);
 
       const data = await response.json();
+      console.log('=== API Response ===');
+      console.log('Success:', data.success);
+      console.log('Thumbnail URL type:', typeof data.thumbnailUrl);
+      console.log('Thumbnail URL prefix:', data.thumbnailUrl?.substring(0, 50));
+      console.log('Full response:', data);
 
       if (data.success && data.thumbnailUrl) {
         setGeneratedThumbnailUrl(data.thumbnailUrl);
@@ -299,7 +304,22 @@ export function ThumbnailGenerator() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `thumbnail-${Date.now()}.png`;
+
+      // Extract extension from content type or data URL
+      let extension = 'png';
+      if (generatedThumbnailUrl.startsWith('data:image/')) {
+        const match = generatedThumbnailUrl.match(/^data:image\/([a-z]+);/i);
+        if (match) {
+          extension = match[1];
+        }
+      } else if (blob.type) {
+        const match = blob.type.match(/image\/([a-z]+)/i);
+        if (match) {
+          extension = match[1];
+        }
+      }
+
+      a.download = `thumbnail-${Date.now()}.${extension}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -326,17 +346,27 @@ export function ThumbnailGenerator() {
           <div className="flex items-center justify-center py-8">
             <Loader2Icon className="h-6 w-6 animate-spin text-blue-600" />
           </div>
-        ) : avatars.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>Nenhum avatar disponível</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => router.push('/avatars/create')}
-            >
-              Criar Avatar
-            </Button>
-          </div>
+         ) : avatars.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <UserIcon className="h-8 w-8" />
+              </EmptyMedia>
+              <EmptyTitle>Nenhum avatar disponível</EmptyTitle>
+              <EmptyDescription>
+                Crie um avatar para começar a gerar thumbnails
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/avatars/create')}
+              >
+                <UserIcon className="h-4 w-4 mr-2" />
+                Criar Avatar
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           <div className="space-y-4">
             {/* VISUAL: Seleção de avatar mostra dropdown com nome + preview da foto principal (avatar size 40x40px) */}
@@ -413,71 +443,85 @@ export function ThumbnailGenerator() {
 
         {loadingReferences ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2Icon className="h-6 w-6 animate-spin text-blue-600" />
+            <Spinner className="h-6 w-6">
+              <Loader2Icon className="text-blue-600" />
+            </Spinner>
           </div>
         ) : references.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>Nenhuma referência disponível</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => router.push('/references')}
-            >
-              Adicionar Referências
-            </Button>
-          </div>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FolderIcon className="h-8 w-8" />
+              </EmptyMedia>
+              <EmptyTitle>Nenhuma referência disponível</EmptyTitle>
+              <EmptyDescription>
+                Adicione referências para personalizar suas thumbnails
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/references')}
+              >
+                <FolderIcon className="h-4 w-4 mr-2" />
+                Adicionar Referências
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           <div>
             <p className="text-sm text-gray-500 mb-4">
               Selecione as referências que deseja usar (opcional)
             </p>
-            {/* VISUAL: Referências em grid com checkboxes para seleção múltipla (blue-500 quando selecionado) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {references.map((reference) => (
-                <Card
-                  key={reference.id}
-                  className={cn(
-                    "relative group overflow-hidden cursor-pointer transition-all",
-                    selectedReferenceIds.includes(reference.id) && "ring-2 ring-blue-500"
-                  )}
-                  onClick={() => handleReferenceToggle(reference.id)}
-                >
-                  <div className="aspect-square">
-                    <img
-                      src={reference.fileUrl}
-                      alt={reference.fileName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* Type Badge */}
-                  <Badge
+            {/* VISUAL: Referências em grid com checkboxes para seleção múltipla (blue-500 quando selecionado) com ScrollArea */}
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {references.map((reference) => (
+                  <Card
+                    key={reference.id}
                     className={cn(
-                      "absolute top-2 left-2",
-                      reference.type === 'thumbnail' && "bg-blue-500",
-                      reference.type === 'logo' && "bg-green-500",
-                      reference.type === 'icon' && "bg-yellow-500",
-                      reference.type === 'background' && "bg-purple-500"
+                      "relative group overflow-hidden cursor-pointer transition-all",
+                      selectedReferenceIds.includes(reference.id) && "ring-2 ring-blue-500"
                     )}
+                    onClick={() => handleReferenceToggle(reference.id)}
                   >
-                    {reference.type}
-                  </Badge>
+                    <div className="aspect-square">
+                      <img
+                        src={reference.fileUrl}
+                        alt={reference.fileName}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-                  {/* Checkbox for selection */}
-                  <div className="absolute top-2 right-2">
-                    <Checkbox
-                      checked={selectedReferenceIds.includes(reference.id)}
-                      className="bg-white/90"
-                    />
-                  </div>
+                    {/* Type Badge */}
+                    <Badge
+                      className={cn(
+                        "absolute top-2 left-2",
+                        reference.type === 'thumbnail' && "bg-blue-500",
+                        reference.type === 'logo' && "bg-green-500",
+                        reference.type === 'icon' && "bg-yellow-500",
+                        reference.type === 'background' && "bg-purple-500"
+                      )}
+                    >
+                      {reference.type}
+                    </Badge>
 
-                  {/* File Name */}
+                    {/* Checkbox for selection */}
+                    <div className="absolute top-2 right-2">
+                      <Checkbox
+                        checked={selectedReferenceIds.includes(reference.id)}
+                        className="bg-white/90"
+                      />
+                    </div>
+
+                    {/* File Name */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                     <p className="text-white text-xs truncate">{reference.fileName}</p>
                   </div>
                 </Card>
               ))}
             </div>
+            </ScrollArea>
           </div>
         )}
       </Card>
@@ -526,7 +570,9 @@ export function ThumbnailGenerator() {
       >
         {generating ? (
           <>
-            <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+            <Spinner className="mr-2">
+              <Loader2Icon className="h-4 w-4" />
+            </Spinner>
             {uploading ? 'Fazendo upload...' : 'Gerando thumbnail...'}
           </>
         ) : (
@@ -567,9 +613,21 @@ export function ThumbnailGenerator() {
             variant="outline"
             className="w-full border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-lg px-8 py-3 font-semibold"
             onClick={handleGenerate}
+            disabled={generating}
           >
-            <RefreshCwIcon className="mr-2 h-4 w-4" />
-            Tentar novamente
+            {generating ? (
+              <>
+                <Spinner className="mr-2">
+                  <Loader2Icon className="h-4 w-4" />
+                </Spinner>
+                Tentando novamente...
+              </>
+            ) : (
+              <>
+                <RefreshCwIcon className="mr-2 h-4 w-4" />
+                Tentar novamente
+              </>
+            )}
           </Button>
         </div>
       )}

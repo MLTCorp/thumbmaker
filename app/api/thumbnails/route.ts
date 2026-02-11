@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
       body.prompt,
       body.textIdea,
       body.thumbnailUrl,
-      body.references || []
+      body.references || [],
+      body.additionalPrompt
     );
 
     return NextResponse.json(thumbnail, { status: 201 });
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest) {
     const avatarId = searchParams.get('avatarId');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
+    const fields = searchParams.get('fields'); // Optional: limit fields returned
 
     // Get thumbnails for user
     let thumbnails = await db.getThumbnailsByUserId(session.user.id);
@@ -85,7 +87,27 @@ export async function GET(req: NextRequest) {
       thumbnails = thumbnails.filter(t => t.createdAt <= toDate);
     }
 
-    return NextResponse.json(thumbnails);
+    // US-010: Optimize response - return only necessary fields for grid view
+    // If 'fields' param is 'grid', return only essential fields
+    let response;
+    if (fields === 'grid') {
+      response = thumbnails.map(t => ({
+        id: t.id,
+        thumbnailUrl: t.thumbnailUrl,
+        textIdea: t.textIdea,
+        createdAt: t.createdAt,
+      }));
+    } else {
+      // Return full objects (for history page or modal details)
+      response = thumbnails;
+    }
+
+    // US-010: Add Cache-Control header for 10 minutes (600 seconds)
+    return NextResponse.json(response, {
+      headers: {
+        'Cache-Control': 'public, max-age=600, s-maxage=600, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Get thumbnails error:', error);
     return NextResponse.json(

@@ -8,7 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { UserIcon } from 'lucide-react';
+import { UserIcon, ArrowLeftIcon, Loader2Icon } from 'lucide-react';
+import { Breadcrumb } from '@/components/layout/breadcrumb';
+import { Spinner } from '@/components/ui/spinner';
+import Link from 'next/link';
 
 export default function CreateAvatarPage() {
   const router = useRouter();
@@ -96,6 +99,15 @@ export default function CreateAvatarPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-4">
+          <Breadcrumb
+            items={[
+              { label: 'Gerar', href: '/generate' },
+              { label: 'Avatars', href: '/avatars' },
+              { label: 'Criar Novo Avatar' },
+            ]}
+          />
+        </div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Criar Novo Avatar</h1>
           <p className="text-gray-600">
@@ -161,7 +173,16 @@ export default function CreateAvatarPage() {
                   type="submit"
                   disabled={isSubmitting || uploadedPhotos.length < 3}
                 >
-                  {isSubmitting ? 'Criando Avatar...' : 'Criar Avatar'}
+                  {isSubmitting ? (
+                    <>
+                      <Spinner className="mr-2">
+                        <Loader2Icon className="h-4 w-4" />
+                      </Spinner>
+                      Criando Avatar...
+                    </>
+                  ) : (
+                    'Criar Avatar'
+                  )}
                 </Button>
               </div>
             </form>

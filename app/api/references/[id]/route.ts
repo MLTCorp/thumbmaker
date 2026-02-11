@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { fileStorage } from '@/lib/file-storage';
 
 export async function DELETE(
   req: NextRequest,
@@ -97,8 +98,8 @@ export async function PATCH(
         );
       }
 
-      // Save new file
-      const savedFile = await fileStorage.saveFile(file, session.user.id);
+      // Save new file to Supabase Storage
+      const savedFile = await fileStorage.saveReferencePhoto(file, session.user.id);
       updates.fileName = savedFile.fileName;
       updates.fileUrl = savedFile.url;
       updates.fileSize = savedFile.fileSize;

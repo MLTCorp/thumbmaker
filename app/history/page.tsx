@@ -27,7 +27,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { DownloadIcon, EyeIcon, CalendarIcon, UserIcon, ImageIcon } from 'lucide-react';
+import { DownloadIcon, EyeIcon, CalendarIcon, UserIcon, ImageIcon, ArrowLeftIcon } from 'lucide-react';
+import Link from 'next/link';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -154,7 +155,22 @@ export default function HistoryPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `thumbnail-${thumbnail.id}.png`;
+
+      // Extract extension from content type or data URL
+      let extension = 'png';
+      if (thumbnail.thumbnailUrl.startsWith('data:image/')) {
+        const match = thumbnail.thumbnailUrl.match(/^data:image\/([a-z]+);/i);
+        if (match) {
+          extension = match[1];
+        }
+      } else if (blob.type) {
+        const match = blob.type.match(/image\/([a-z]+)/i);
+        if (match) {
+          extension = match[1];
+        }
+      }
+
+      a.download = `thumbnail-${thumbnail.id}.${extension}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -250,6 +266,12 @@ export default function HistoryPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <Link href="/generate">
+            <Button variant="ghost" size="sm" className="mb-4">
+              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Histórico de Thumbnails</h1>
           <p className="text-gray-600">Visualize todos os thumbnails que você gerou</p>
         </div>

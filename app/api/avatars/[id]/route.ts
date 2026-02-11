@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fileStorage } from '@/lib/file-storage';
+import { uploadAvatarPhotoToStorage } from '@/lib/supabase-storage';
 
 // Initialize file storage for avatars
 fileStorage.init('avatars');
@@ -110,9 +111,10 @@ export async function PUT(
         );
       }
 
-      // Upload new files
+      // Upload new files to Supabase Storage
       const uploadPromises = newFiles.map(async (file) => {
-        return await fileStorage.saveFile(file, session.user.id, 'avatars');
+        const photoId = Math.random().toString(36).substring(2, 15);
+        return await fileStorage.saveAvatarPhoto(file, session.user.id);
       });
 
       const uploadedPhotos = await Promise.all(uploadPromises);

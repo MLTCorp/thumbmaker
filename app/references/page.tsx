@@ -7,15 +7,21 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2Icon, EditIcon, PlusIcon, UploadIcon } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Trash2Icon, EditIcon, PlusIcon, UploadIcon, ArrowLeftIcon, Loader2Icon } from 'lucide-react';
+import { Breadcrumb } from '@/components/layout/breadcrumb';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from '@/components/ui/empty';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -262,10 +268,25 @@ export default function ReferencesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-4">
+            <Breadcrumb
+              items={[
+                { label: 'Gerar', href: '/generate' },
+                { label: 'Referências' },
+              ]}
+            />
+          </div>
+          <div className="mb-8">
+            <Skeleton className="h-9 w-48 mb-2" />
+            <Skeleton className="h-6 w-96" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+              <Skeleton key={i} className="w-full aspect-square rounded-lg" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -275,6 +296,14 @@ export default function ReferencesPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
+        <div className="mb-4">
+          <Breadcrumb
+            items={[
+              { label: 'Gerar', href: '/generate' },
+              { label: 'Referências' },
+            ]}
+          />
+        </div>
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Referências</h1>
@@ -315,230 +344,133 @@ export default function ReferencesPage() {
 
         {/* Empty state */}
         {references.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="text-gray-400 mb-4">
-              <UploadIcon className="h-16 w-16 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhuma referência encontrada
-            </h3>
-            <p className="text-gray-500 mb-4">
-              Comece fazendo upload das suas referências visuais
-            </p>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Criar minha primeira referência
-            </Button>
-          </Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <UploadIcon className="h-8 w-8" />
+              </EmptyMedia>
+              <EmptyTitle className="text-lg">Nenhuma referência encontrada</EmptyTitle>
+              <EmptyDescription>
+                Comece fazendo upload das suas referências visuais
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Criar minha primeira referência
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
-          /* VISUAL: Grid de referências em cards 250x250px, aspect-ratio 1:1, rounded-lg, shadow-sm */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {references.map((reference) => (
-              <Card
-                key={reference.id}
-                className="relative group overflow-hidden"
-                style={{ width: '250px', height: '250px' }}
-              >
-                {/* Image preview */}
-                <div className="aspect-square">
-                  <img
-                    src={reference.fileUrl}
-                    alt={reference.fileName}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* VISUAL: Checkbox em cada card para seleção múltipla (blue-500 quando selecionado) */}
-                <div className="absolute top-2 left-2 z-10">
-                  <Checkbox
-                    checked={selectedIds.has(reference.id)}
-                    onCheckedChange={(checked) =>
-                      handleCheckboxChange(reference.id, checked as boolean)
-                    }
-                    className="bg-white/90 border-gray-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                  />
-                </div>
-
-                {/* VISUAL: Badge de tipo: thumbnail (blue-500), logo (green-500), ícone (yellow-500), fundo (purple-500) */}
-                <Badge
-                  className={cn(
-                    "absolute top-2 right-2",
-                    reference.type === 'thumbnail' && "bg-blue-500",
-                    reference.type === 'logo' && "bg-green-500",
-                    reference.type === 'icon' && "bg-yellow-500",
-                    reference.type === 'background' && "bg-purple-500"
-                  )}
+          /* VISUAL: Grid de referências em cards 250x250px, aspect-ratio 1:1, rounded-lg, shadow-sm com ScrollArea para melhor UX */
+          <ScrollArea className="h-[600px] pr-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {references.map((reference) => (
+                <Card
+                  key={reference.id}
+                  className="relative group overflow-hidden"
+                  style={{ width: '250px', height: '250px' }}
                 >
-                  {getTypeDisplay(reference.type)}
-                </Badge>
-
-                {/* VISUAL: Card mostra: preview da imagem, tipo (badge), descrição (truncada em 2 linhas), botões de ação */}
-                {/* Actions overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
-                  {/* VISUAL: Botões: "Editar" (blue-500, rounded, px-3 py-1) e "Deletar" (red-500, rounded, px-3 py-1) */}
-                  <Button
-                    size="sm"
-                    className="rounded px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white"
-                    onClick={() => openEditDialog(reference)}
-                  >
-                    <EditIcon className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="rounded px-3 py-1 bg-red-500 hover:bg-red-600 text-white"
-                    onClick={() => openDeleteDialog(reference)}
-                  >
-                    <Trash2Icon className="h-4 w-4 mr-1" />
-                    Deletar
-                  </Button>
-                </div>
-
-                {/* Description overlay */}
-                {reference.description && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                    <p className="text-white text-xs truncate" title={reference.description}>
-                      {reference.description}
-                    </p>
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* COMPORTAMENTO: Clicar em "Criar referência" abre modal com formulário (file input, tipo dropdown, descrição textarea) */}
-        {/* Create Dialog */}
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Criar Referência</DialogTitle>
-              <DialogDescription>
-                Faça upload de uma imagem e adicione as informações da referência
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              {/* File Input */}
-              <div className="space-y-2">
-                <Label htmlFor="file">Imagem *</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={(e) =>
-                    setCreateForm(prev => ({
-                      ...prev,
-                      file: e.target.files?.[0] || null
-                    }))
-                  }
-                />
-                {createForm.file && (
-                  <div className="mt-2">
+                  {/* Image preview */}
+                  <div className="aspect-square">
                     <img
-                      src={URL.createObjectURL(createForm.file)}
-                      alt="Preview"
-                      className="w-full h-32 object-cover rounded-lg"
+                      src={reference.fileUrl}
+                      alt={reference.fileName}
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                )}
-              </div>
 
-              {/* Type Dropdown */}
-              <div className="space-y-2">
-                <Label htmlFor="type">Tipo *</Label>
-                <Select
-                  value={createForm.type}
-                  onValueChange={(value) =>
-                    setCreateForm(prev => ({ ...prev, type: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="thumbnail">Thumbnail</SelectItem>
-                    <SelectItem value="logo">Logo</SelectItem>
-                    <SelectItem value="icon">Ícone</SelectItem>
-                    <SelectItem value="background">Fundo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  {/* VISUAL: Checkbox em cada card para seleção múltipla (blue-500 quando selecionado) */}
+                  <div className="absolute top-2 left-2 z-10">
+                    <Checkbox
+                      checked={selectedIds.has(reference.id)}
+                      onCheckedChange={(checked) =>
+                        handleCheckboxChange(reference.id, checked as boolean)
+                      }
+                      className="bg-white/90 border-gray-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                    />
+                  </div>
 
-              {/* Description Textarea */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição (opcional)</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Adicione uma descrição..."
-                  value={createForm.description}
-                  onChange={(e) =>
-                    setCreateForm(prev => ({ ...prev, description: e.target.value }))
-                  }
-                  rows={3}
-                />
-              </div>
+                  {/* VISUAL: Badge de tipo: thumbnail (blue-500), logo (green-500), ícone (yellow-500), fundo (purple-500) */}
+                  <Badge
+                    className={cn(
+                      "absolute top-2 right-2",
+                      reference.type === 'thumbnail' && "bg-blue-500",
+                      reference.type === 'logo' && "bg-green-500",
+                      reference.type === 'icon' && "bg-yellow-500",
+                      reference.type === 'background' && "bg-purple-500"
+                    )}
+                  >
+                    {getTypeDisplay(reference.type)}
+                  </Badge>
+
+                  {/* VISUAL: Card mostra: preview da imagem, tipo (badge), descrição (truncada em 2 linhas), botões de ação */}
+                  {/* Actions overlay */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                    {/* VISUAL: Botões: "Editar" (blue-500, rounded, px-3 py-1) e "Deletar" (red-500, rounded, px-3 py-1) */}
+                    <Button
+                      size="sm"
+                      className="rounded px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white"
+                      onClick={() => openEditDialog(reference)}
+                    >
+                      <EditIcon className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="rounded px-3 py-1 bg-red-500 hover:bg-red-600 text-white"
+                      onClick={() => openDeleteDialog(reference)}
+                    >
+                      <Trash2Icon className="h-4 w-4 mr-1" />
+                      Deletar
+                    </Button>
+                  </div>
+
+                  {/* Description overlay */}
+                  {reference.description && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                      <p className="text-white text-xs truncate" title={reference.description}>
+                        {reference.description}
+                      </p>
+                    </div>
+                  )}
+                </Card>
+              ))}
             </div>
+          </ScrollArea>
+        )}
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setCreateDialogOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={creating || !createForm.file || !createForm.type}
-              >
-                {creating ? 'Criando...' : 'Criar'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* COMPORTAMENTO: Clicar em "Criar referência" abre sheet lateral com formulário (file input, tipo dropdown, descrição textarea) */}
+        {/* Create Sheet */}
+        <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Criar Referência</SheetTitle>
+              <SheetDescription>
+                Faça upload de uma imagem e adicione as informações da referência
+              </SheetDescription>
+            </SheetHeader>
 
-        {/* COMPORTAMENTO: Clicar em "Editar" abre modal preenchido, usuário modifica campos e salva */}
-        {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar Referência</DialogTitle>
-              <DialogDescription>
-                Edite as informações da referência
-              </DialogDescription>
-            </DialogHeader>
-
-            {editReference && (
-              <div className="space-y-4">
-                {/* Current image */}
+            <ScrollArea className="h-[calc(100vh-180px)] pr-4">
+              <div className="space-y-4 mt-4">
+                {/* File Input */}
                 <div className="space-y-2">
-                  <Label>Imagem atual</Label>
-                  <img
-                    src={editReference.fileUrl}
-                    alt={editReference.fileName}
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                </div>
-
-                {/* File Input (optional replacement) */}
-                <div className="space-y-2">
-                  <Label htmlFor="edit-file">Substituir imagem (opcional)</Label>
+                  <Label htmlFor="file">Imagem *</Label>
                   <Input
-                    id="edit-file"
+                    id="file"
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={(e) =>
-                      setEditForm(prev => ({
+                      setCreateForm(prev => ({
                         ...prev,
                         file: e.target.files?.[0] || null
                       }))
                     }
                   />
-                  {editForm.file && (
+                  {createForm.file && (
                     <div className="mt-2">
-                      <p className="text-sm text-gray-600 mb-1">Nova imagem:</p>
                       <img
-                        src={URL.createObjectURL(editForm.file)}
+                        src={URL.createObjectURL(createForm.file)}
                         alt="Preview"
                         className="w-full h-32 object-cover rounded-lg"
                       />
@@ -548,15 +480,15 @@ export default function ReferencesPage() {
 
                 {/* Type Dropdown */}
                 <div className="space-y-2">
-                  <Label htmlFor="edit-type">Tipo</Label>
+                  <Label htmlFor="type">Tipo *</Label>
                   <Select
-                    value={editForm.type}
+                    value={createForm.type}
                     onValueChange={(value) =>
-                      setEditForm(prev => ({ ...prev, type: value }))
+                      setCreateForm(prev => ({ ...prev, type: value }))
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Selecione um tipo" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="thumbnail">Thumbnail</SelectItem>
@@ -569,21 +501,137 @@ export default function ReferencesPage() {
 
                 {/* Description Textarea */}
                 <div className="space-y-2">
-                  <Label htmlFor="edit-description">Descrição (opcional)</Label>
+                  <Label htmlFor="description">Descrição (opcional)</Label>
                   <Textarea
-                    id="edit-description"
+                    id="description"
                     placeholder="Adicione uma descrição..."
-                    value={editForm.description}
+                    value={createForm.description}
                     onChange={(e) =>
-                      setEditForm(prev => ({ ...prev, description: e.target.value }))
+                      setCreateForm(prev => ({ ...prev, description: e.target.value }))
                     }
                     rows={3}
                   />
                 </div>
               </div>
-            )}
+            </ScrollArea>
 
-            <DialogFooter>
+            <SheetFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreate}
+                disabled={creating || !createForm.file || !createForm.type}
+                className="flex-1"
+              >
+                {creating ? (
+                  <>
+                    <Spinner className="mr-2">
+                      <Loader2Icon className="h-4 w-4" />
+                    </Spinner>
+                    Criando...
+                  </>
+                ) : (
+                  'Criar'
+                )}
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+
+        {/* COMPORTAMENTO: Clicar em "Editar" abre sheet lateral preenchido, usuário modifica campos e salva */}
+        {/* Edit Sheet */}
+        <Sheet open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Editar Referência</SheetTitle>
+              <SheetDescription>
+                Edite as informações da referência
+              </SheetDescription>
+            </SheetHeader>
+
+            <ScrollArea className="h-[calc(100vh-180px)] pr-4">
+              {editReference && (
+                <div className="space-y-4 mt-4">
+                  {/* Current image */}
+                  <div className="space-y-2">
+                    <Label>Imagem atual</Label>
+                    <img
+                      src={editReference.fileUrl}
+                      alt={editReference.fileName}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                  </div>
+
+                  {/* File Input (optional replacement) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-file">Substituir imagem (opcional)</Label>
+                    <Input
+                      id="edit-file"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={(e) =>
+                        setEditForm(prev => ({
+                          ...prev,
+                          file: e.target.files?.[0] || null
+                        }))
+                      }
+                    />
+                    {editForm.file && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600 mb-1">Nova imagem:</p>
+                        <img
+                          src={URL.createObjectURL(editForm.file)}
+                          alt="Preview"
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Type Dropdown */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-type">Tipo</Label>
+                    <Select
+                      value={editForm.type}
+                      onValueChange={(value) =>
+                        setEditForm(prev => ({ ...prev, type: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="thumbnail">Thumbnail</SelectItem>
+                        <SelectItem value="logo">Logo</SelectItem>
+                        <SelectItem value="icon">Ícone</SelectItem>
+                        <SelectItem value="background">Fundo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Description Textarea */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-description">Descrição (opcional)</Label>
+                    <Textarea
+                      id="edit-description"
+                      placeholder="Adicione uma descrição..."
+                      value={editForm.description}
+                      onChange={(e) =>
+                        setEditForm(prev => ({ ...prev, description: e.target.value }))
+                      }
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+
+            <SheetFooter className="gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -591,18 +639,29 @@ export default function ReferencesPage() {
                   setEditReference(null);
                   setEditForm({ file: null, type: '', description: '' });
                 }}
+                className="flex-1"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleEdit}
                 disabled={editing}
+                className="flex-1"
               >
-                {editing ? 'Salvando...' : 'Salvar'}
+                {editing ? (
+                  <>
+                    <Spinner className="mr-2">
+                      <Loader2Icon className="h-4 w-4" />
+                    </Spinner>
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
 
         {/* COMPORTAMENTO: Clicar em "Deletar" abre alertDialog: "Tem certeza que deseja deletar [Descrição da referência]?" */}
         {/* Delete Alert Dialog */}

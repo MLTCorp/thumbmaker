@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
+import { toast } from 'sonner';
 import { useEffect } from "react";
+import { Spinner } from '@/components/ui/spinner';
+import { Loader2Icon } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
@@ -169,7 +171,16 @@ function LoginForm() {
             className="w-full bg-blue-500 hover:bg-blue-600 rounded-lg px-6 py-3"
             disabled={isLoading}
           >
-            {isLoading ? "Entrando..." : "Entrar"}
+            {isLoading ? (
+              <>
+                <Spinner className="mr-2">
+                  <Loader2Icon className="h-4 w-4" />
+                </Spinner>
+                Entrando...
+              </>
+            ) : (
+              'Entrar'
+            )}
           </Button>
         </form>
 
