@@ -39,28 +39,6 @@ function generateOptimizedPrompt(
   return promptTemplate;
 }
 
-// Convert an image URL to a base64 data URL for reliable model access
-async function imageUrlToBase64(url: string): Promise<string | null> {
-  try {
-    // Already a data URL
-    if (url.startsWith('data:')) return url;
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error('Failed to fetch image for base64 conversion:', response.status, response.statusText);
-      return null;
-    }
-
-    const buffer = await response.arrayBuffer();
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
-    const base64 = Buffer.from(buffer).toString('base64');
-    return `data:${contentType};base64,${base64}`;
-  } catch (error) {
-    console.error('Error converting image to base64:', error);
-    return null;
-  }
-}
-
 // Call OpenRouter API to generate thumbnail
 async function callOpenRouterAPI(prompt: string, avatarPhotoUrl: string, referenceUrls: string[] = []): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -77,39 +55,25 @@ async function callOpenRouterAPI(prompt: string, avatarPhotoUrl: string, referen
     }
   ];
 
-  // Add avatar photo as visual reference (convert to base64 for reliable access)
+  // Add avatar photo as visual reference (send URL directly to save time)
   if (avatarPhotoUrl) {
-    const base64Avatar = await imageUrlToBase64(avatarPhotoUrl);
-    if (base64Avatar) {
-      content.push({
-        type: 'image_url',
-        image_url: {
-          url: base64Avatar
-        }
-      });
-      console.log('Avatar photo added as base64 image reference');
-    } else {
-      console.warn('Could not convert avatar photo to base64, sending URL directly');
-      content.push({
-        type: 'image_url',
-        image_url: {
-          url: avatarPhotoUrl
-        }
-      });
-    }
+    content.push({
+      type: 'image_url',
+      image_url: {
+        url: avatarPhotoUrl
+      }
+    });
+    console.log('Avatar photo added as URL reference:', avatarPhotoUrl);
   }
 
-  // Add reference images as visual context
+  // Add reference images as visual context (send URLs directly)
   for (const refUrl of referenceUrls) {
-    const base64Ref = await imageUrlToBase64(refUrl);
-    if (base64Ref) {
-      content.push({
-        type: 'image_url',
-        image_url: {
-          url: base64Ref
-        }
-      });
-    }
+    content.push({
+      type: 'image_url',
+      image_url: {
+        url: refUrl
+      }
+    });
   }
 
   console.log('Sending content with', content.length, 'items (text + images)');
@@ -119,7 +83,7 @@ async function callOpenRouterAPI(prompt: string, avatarPhotoUrl: string, referen
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:3000',
+      'HTTP-Referer': process.env.NEXTAUTH_URL || 'http://localhost:3000',
       'X-Title': 'Thumbmaker',
     },
     body: JSON.stringify({
@@ -130,7 +94,7 @@ async function callOpenRouterAPI(prompt: string, avatarPhotoUrl: string, referen
           content: content
         },
       ],
-      max_tokens: 4096,
+      max_tokens: 2048,
       temperature: 0.8,
     }),
   });
